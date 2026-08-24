@@ -1,0 +1,60 @@
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    hostname: namenode
+    restart: always
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    environment:
+      - CLUSTER_NAME=practica_bigdata
+    env_file:
+      - ./hadoop.env
+    networks:
+      bigdata:
+          aliases:
+              - namenode
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    hostname: datanode
+    restart: always
+    ports:
+      - "9864:9864"
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    env_file:
+      - ./hadoop.env
+    depends_on:
+      - namenode
+    networks:
+      bigdata:
+          aliases:
+              - datanode
+    volumes:
+      - ./datasets:/datasets
+
+
+  spark-jupyter:
+    image: jupyter/pyspark-notebook
+    container_name: spark-jupyter
+    hostname: spark-jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - ./datasets:/datasets
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=bigdata_unir
+    depends_on:
+      - namenode
+      - datanode
+    networks:
+      - bigdata
+
+networks:
+  bigdata:
+      driver: bridge
